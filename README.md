@@ -6,6 +6,8 @@ A collection of simplified WebGL examples
 
 https://github.com/mdn/webgl-examples/blob/gh-pages/tutorial/sample2/webgl-demo.js
 
+Source: [0004.js](public/0004.js "JavaScript file")
+
 ### Run main function
 ```javascript
  main();
