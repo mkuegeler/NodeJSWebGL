@@ -4,6 +4,8 @@ main();
 // Start here
 //
 function main() {
+  /* Step 1: Prepare the canvas and get WebGL context */
+
   const canvas = document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl');
 
@@ -13,282 +15,119 @@ function main() {
     alert('Unable to initialize WebGL. Your browser or machine may not support it.');
     return;
   }
-
-  // Vertex shader program
-
-  const vsSource = `
-    attribute vec4 aVertexPosition;
-    attribute vec4 aVertexColor;
-
-    uniform mat4 uModelViewMatrix;
-    uniform mat4 uProjectionMatrix;
-
-    varying lowp vec4 vColor;
-
-    void main() {
-      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-      vColor = aVertexColor;
-    }
-  `;
-
-  // const vsSource = `
-  //   attribute vec4 aVertexPosition;
-
-  //   uniform mat4 uModelViewMatrix;
-  //   uniform mat4 uProjectionMatrix;
-
-  //   void main() {
-  //     gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-  //   }
-  // `;
-
-  // Fragment shader program
-
-  const fsSource = `
-    varying lowp vec4 vColor;
-
-    void main() {
-      gl_FragColor = vColor;
-    }
-  `;
-
-  // const fsSource = `
-  //   void main() {
-  //     gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-  //   }
-  // `;
-
-  // Initialize a shader program; this is where all the lighting
-  // for the vertices and so forth is established.
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
-
-  // Collect all the info needed to use the shader program.
-  // Look up which attribute our shader program is using
-  // for aVertexPosition and look up uniform locations.
-  const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
-    },
-    uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-    },
-  };
-
-  // Here's where we call the routine that builds all the
-  // objects we'll be drawing.
-  const buffers = initBuffers(gl);
-
-  // Draw the scene
-  drawScene(gl, programInfo, buffers);
-}
-
-//
-// initBuffers
-//
-// Initialize the buffers we'll need. For this demo, we just
-// have one object -- a simple two-dimensional square.
-//
-function initBuffers(gl) {
   
+  // Reference: 0001.html
+  /* Step 2: Define the geometry and store it in buffer objects */
+  var vertices = [0.0, 0.0, -0.1, -0.5, 0.5, -0.5,];
 
-  // Create a buffer for the square's positions.
+  var vertex_buffer = geometryBuffer(gl,vertices);
 
-  const positionBuffer = gl.createBuffer();
+  /* Step 3: Create and compile Shader programs */
+  var shaderProgram = createShader(gl); 
 
-  // Select the positionBuffer as the one to apply buffer
-  // operations to from here out.
+  /* Step 4: Associate the shader programs to buffer objects */
+  shader2Buffer(gl,vertex_buffer,shaderProgram);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  /* Step 5: Drawing the required object (triangle) */
+  drawObject(canvas,gl);
+ 
+} // main end
 
-  // Now create an array of positions for the square.
 
-  const positions = [
-     1.0,  1.0,
-    -1.0,  1.0,
-     1.0, -1.0,
-    -1.0, -1.0,
-  ];
+/* Step 2: Define the geometry and store it in buffer objects */
 
-  // Now pass the list of positions into WebGL to build the
-  // shape. We do this by creating a Float32Array from the
-  // JavaScript array, then use it to fill the current buffer.
+function geometryBuffer(gl,vertices) {
 
-  gl.bufferData(gl.ARRAY_BUFFER,
-                new Float32Array(positions),
-                gl.STATIC_DRAW);
+  // Create a new buffer object
+  var vertex_buffer = gl.createBuffer();
 
-  // Add color array
-  const colors = [
-    1.0,  1.0,  1.0,  1.0,    // white
-    1.0,  0.0,  0.0,  1.0,    // red
-    0.0,  1.0,  0.0,  1.0,    // green
-    0.0,  0.0,  1.0,  1.0,    // blue
-  ];
+  // Bind an empty array buffer to it
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 
-  const colorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);              
+  // Pass the vertices data to the buffer
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  return vertex_buffer;
 
-  return {
-    position: positionBuffer,
-    color: colorBuffer,
-  };
 }
 
-//
-// Draw the scene.
-//
-function drawScene(gl, programInfo, buffers) {
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
-  gl.clearDepth(1.0);                 // Clear everything
-  gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-  gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+ /* Step 3: Create and compile Shader programs */
 
-  // Clear the canvas before we start drawing on it.
+function createShader(gl) {
+  // Vertex shader source code
+         var vertCode =
+            'attribute vec2 coordinates;' + 
+            'void main(void) {' + ' gl_Position = vec4(coordinates,0.0, 1.0);' + '}';
+  
+  //Create a vertex shader object
+         var vertShader = gl.createShader(gl.VERTEX_SHADER);
 
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  //Attach vertex shader source code
+         gl.shaderSource(vertShader, vertCode);
 
-  // Create a perspective matrix, a special matrix that is
-  // used to simulate the distortion of perspective in a camera.
-  // Our field of view is 45 degrees, with a width/height
-  // ratio that matches the display size of the canvas
-  // and we only want to see objects between 0.1 units
-  // and 100 units away from the camera.
+  //Compile the vertex shader
+         gl.compileShader(vertShader);
 
-  const fieldOfView = 45 * Math.PI / 180;   // in radians
-  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  const zNear = 0.1;
-  const zFar = 100.0;
-  const projectionMatrix = mat4.create();
+  //Fragment shader source code
+         var fragCode = 'void main(void) {' + 'gl_FragColor = vec4(0.0, 0.0, 0.0, 0.1);' + '}';
 
-  // note: glmatrix.js always has the first argument
-  // as the destination to receive the result.
-  mat4.perspective(projectionMatrix,
-                   fieldOfView,
-                   aspect,
-                   zNear,
-                   zFar);
+  // Create fragment shader object
+         var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 
-  // Set the drawing position to the "identity" point, which is
-  // the center of the scene.
-  const modelViewMatrix = mat4.create();
+  // Attach fragment shader source code
+         gl.shaderSource(fragShader, fragCode);
 
-  // Now move the drawing position a bit to where we want to
-  // start drawing the square.
+  // Compile the fragment shader
+         gl.compileShader(fragShader);
 
-  mat4.translate(modelViewMatrix,     // destination matrix
-                 modelViewMatrix,     // matrix to translate
-                 [-0.0, 0.0, -8.0]);  // amount to translate
+  // Create a shader program object to store combined shader program
+         var shaderProgram = gl.createProgram();
 
-  // Tell WebGL how to pull out the positions from the position
-  // buffer into the vertexPosition attribute.
-  {
-    const numComponents = 2;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.vertexPosition,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.vertexPosition);
-  }
+  // Attach a vertex shader
+         gl.attachShader(shaderProgram, vertShader); 
+         
+  // Attach a fragment shader
+         gl.attachShader(shaderProgram, fragShader);
 
-  {
-    const numComponents = 4;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.vertexColor,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.vertexColor);
-  }
+  // Link both programs
+         gl.linkProgram(shaderProgram);
 
-  // Tell WebGL to use our program when drawing
+  // Use the combined shader program object
+         gl.useProgram(shaderProgram);
 
-  gl.useProgram(programInfo.program);
+  return shaderProgram;       
 
-  // Set the shader uniforms
-
-  gl.uniformMatrix4fv(
-      programInfo.uniformLocations.projectionMatrix,
-      false,
-      projectionMatrix);
-  gl.uniformMatrix4fv(
-      programInfo.uniformLocations.modelViewMatrix,
-      false,
-      modelViewMatrix);
-
-  {
-    const offset = 0;
-    const vertexCount = 4;
-    gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
-  }
 }
 
-//
-// Initialize a shader program, so WebGL knows how to draw our data
-//
-function initShaderProgram(gl, vsSource, fsSource) {
-  const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-  const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+/* Step 4: Associate the shader programs to buffer objects */
+function shader2Buffer(gl,vertex_buffer,shaderProgram) {
+  //Bind vertex buffer object
+         gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 
-  // Create the shader program
+  //Get the attribute location
+         var coord = gl.getAttribLocation(shaderProgram, "coordinates");
 
-  const shaderProgram = gl.createProgram();
-  gl.attachShader(shaderProgram, vertexShader);
-  gl.attachShader(shaderProgram, fragmentShader);
-  gl.linkProgram(shaderProgram);
+  //point an attribute to the currently bound VBO
+         gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
 
-  // If creating the shader program failed, alert
+  //Enable the attribute
+         gl.enableVertexAttribArray(coord);
 
-  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
-    return null;
-  }
-
-  return shaderProgram;
 }
+  
+/* Step 5: Drawing the required object (triangle) */
+function drawObject(canvas,gl) {
+// Clear the canvas
+         gl.clearColor(0.5, 0.5, 0.5, 0.9);
 
-//
-// creates a shader of the given type, uploads the source and
-// compiles it.
-//
-function loadShader(gl, type, source) {
-  const shader = gl.createShader(type);
+  // Enable the depth test
+         gl.enable(gl.DEPTH_TEST); 
+         
+  // Clear the color buffer bit
+         gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // Send the source to the shader object
+  // Set the view port
+         gl.viewport(0,0,canvas.width,canvas.height);
 
-  gl.shaderSource(shader, source);
-
-  // Compile the shader program
-
-  gl.compileShader(shader);
-
-  // See if it compiled successfully
-
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
-  }
-
-  return shader;
+  // Draw the triangle
+         gl.drawArrays(gl.TRIANGLES, 0, 3);  
 }
