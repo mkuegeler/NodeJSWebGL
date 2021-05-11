@@ -8,6 +8,8 @@ var records = [
       { ID: 6, Name: "0006.html", Description: 'Experiment 6' },
       { ID: 7, Name: "0007.html", Description: 'Experiment 7' },
       { ID: 8, Name: "0008.html", Description: 'Experiment 8' },
+      { ID: 9, Name: "0009.html", Description: 'Experiment 9' },
+      { ID: 10, Name: "0010.html", Description: 'Experiment 10' },
     ]
 
 var recordTable = new Vue({

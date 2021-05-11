@@ -1,7 +1,7 @@
 main();
 
 //
-// Start here
+// Start here: main function
 //
 function main() {
   /* Step 1: Prepare the canvas and get WebGL context */
@@ -18,8 +18,9 @@ function main() {
   
   // Reference: 0001.html
   /* Step 2: Define the geometry and store it in buffer objects */
-  var vertices = [0.0, 0.0, -0.1, -0.5, 0.5, -0.5,];
-
+  
+  var vertices = [-0.5, 0.5, -0.5, -0.5, 0.0, -0.5,];
+ 
   var vertex_buffer = geometryBuffer(gl,vertices);
 
   /* Step 3: Create and compile Shader programs */
@@ -57,7 +58,7 @@ function createShader(gl) {
          var vertCode =
             'attribute vec2 coordinates;' + 
             'void main(void) {' + ' gl_Position = vec4(coordinates,0.0, 1.0);' + '}';
-  
+
   //Create a vertex shader object
          var vertShader = gl.createShader(gl.VERTEX_SHADER);
 
@@ -116,18 +117,19 @@ function shader2Buffer(gl,vertex_buffer,shaderProgram) {
   
 /* Step 5: Drawing the required object (triangle) */
 function drawObject(canvas,gl) {
-// Clear the canvas
+  // Clear the canvas
          gl.clearColor(0.5, 0.5, 0.5, 0.9);
 
   // Enable the depth test
          gl.enable(gl.DEPTH_TEST); 
          
   // Clear the color buffer bit
-         gl.clear(gl.COLOR_BUFFER_BIT);
+         gl.clear(gl.COLOR_BUFFER_BIT);  
 
   // Set the view port
          gl.viewport(0,0,canvas.width,canvas.height);
 
   // Draw the triangle
-         gl.drawArrays(gl.TRIANGLES, 0, 3);  
+         gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
+
